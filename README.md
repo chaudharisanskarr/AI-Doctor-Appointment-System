@@ -60,7 +60,7 @@ AI Doctor Appointment System/
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/username/ai-doctor-appointment-system.git
+   git clone https://github.com/chaudharisanskarr/AI-Doctor-Appointment-System.git
    cd ai-doctor-appointment-system
    ```
 
