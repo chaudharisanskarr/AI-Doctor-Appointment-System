@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Appointment Scheduler</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Doctor Appointment Scheduler</h1>
+
+    <!-- Doctor Cards Section -->
+    <div id="doctor-cards"></div>
+
+    <form id="appointment-form">
+        <label for="doctor">Select Doctor:</label>
+        <select id="doctor" name="doctor" required>
+            <option value="" disabled selected>Select a doctor</option>
+        </select><br><br>
+
+        <label for="day">Select Day:</label>
+        <select id="day" name="day" required>
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+        </select><br><br>
+
+        <label for="time-slot">Select Time Slot:</label>
+        <select id="time-slot" name="time-slot" required>
+            <option value="" disabled selected>Select a time slot</option>
+        </select><br><br>
+
+        <label for="patient-name">Your Name:</label>
+        <input type="text" id="patient-name" name="patient-name" required><br><br>
+
+        <label for="patient-email">Your Email:</label>
+        <input type="email" id="patient-email" name="patient-email" required><br><br>
+
+        <button type="submit">Book Appointment</button>
+    </form>
+
+    <script>
+        $(document).ready(function () {
+            // Fetch doctors on page load
+            $.get('/get_doctors', function (data) {
+                if (data && data.length > 0) {
+                    data.forEach(doctor => {
+                        $('#doctor').append(
+                            `<option value="${doctor.doctor_name}">${doctor.doctor_name} - ${doctor.specialization}</option>`
+                        );
+                        $('#doctor-cards').append(`
+                            <div class="doctor-card" data-doctor="${doctor.doctor_name}">
+                                <h3>${doctor.doctor_name}</h3>
+                                <p><strong>Specialization:</strong> ${doctor.specialization}</p>
+                                <p><strong>Qualification:</strong> ${doctor.qualification}</p>
+                                <button class="select-doctor-btn">Select Doctor</button>
+                            </div>
+                        `);
+                    });
+
+                    // Event listener for selecting a doctor from cards
+                    $('.select-doctor-btn').click(function () {
+                        const doctorName = $(this).parent().data('doctor');
+                        $('#doctor').val(doctorName);
+                    });
+                } else {
+                    alert('No doctors available.');
+                }
+            });
+
+            // Fetch available slots when a doctor and day are selected
+            $('#doctor, #day').change(function () {
+                const doctorName = $('#doctor').val();
+                const day = $('#day').val();
+
+                if (doctorName && day) {
+                    $.ajax({
+                        url: '/get_slots',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ doctor_name: doctorName, day: day }),
+                        success: function (response) {
+                            $('#time-slot').empty().append('<option value="" disabled selected>Select a time slot</option>');
+                            response.available_slots.forEach(slot => {
+                                $('#time-slot').append(`<option value="${slot.time}">${slot.time}</option>`);
+                            });
+                        },
+                        error: function () {
+                            alert('Failed to fetch available slots.');
+                        }
+                    });
+                }
+            });
+
+            // Submit the form to book an appointment
+            $('#appointment-form').submit(function (e) {
+                e.preventDefault();
+                const formData = {
+                    doctor_name: $('#doctor').val(),
+                    day: $('#day').val(),
+                    time_slot: $('#time-slot').val(),
+                    patient_name: $('#patient-name').val(),
+                    patient_email: $('#patient-email').val(),
+                };
+
+                $.ajax({
+                    url: '/book_appointment',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function (response) {
+                        alert(response.message);
+                    },
+                    error: function (xhr) {
+                        const error = JSON.parse(xhr.responseText);
+                        alert(error.message);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

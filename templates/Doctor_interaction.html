@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Assessment</title>
+</head>
+<body>
+    <h1>Health Assessment</h1>
+
+    <div id="symptoms-input">
+        <p>Please describe your symptoms:</p>
+        <button onclick="startSpeechRecognition()">Start Speaking</button>
+        <p id="recognized-text"></p>
+    </div>
+
+    <div id="response-output">
+        <button onclick="speakResponse()">Speak Response</button>
+        <p id="response-text"></p>
+    </div>
+
+    <script>
+        // Speech Recognition API
+        let recognition;
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = "en-US";
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onresult = function(event) {
+                const speech = event.results[0][0].transcript;
+                document.getElementById('recognized-text').innerText = `You said: ${speech}`;
+                // Send recognized speech to backend
+                fetch('/process-symptoms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ symptoms: speech })
+                }).then(response => response.json()).then(data => {
+                    document.getElementById('response-text').innerText = data.message;
+                });
+            };
+
+            recognition.onerror = function(event) {
+                console.error(event.error);
+            };
+        } else {
+            alert('Speech Recognition is not supported in this browser.');
+        }
+
+        // Start Speech Recognition
+        function startSpeechRecognition() {
+            recognition.start();
+        }
+
+        // Text-to-Speech API
+        function speakResponse() {
+            const responseText = document.getElementById('response-text').innerText;
+            const speechSynthesis = window.speechSynthesis;
+            const speech = new SpeechSynthesisUtterance(responseText);
+            speechSynthesis.speak(speech);
+        }
+    </script>
+</body>
+</html>
